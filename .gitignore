@@ -41,6 +41,8 @@ build/
 **/node_modules/
 **/dist/
 **/*.log
+# Env files (secrets)
 .env
-.env.docker
+.env.*
+!.env.docker
 .idea
