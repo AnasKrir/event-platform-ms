@@ -1,0 +1,104 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  config-server:
+    build: ./services/config-server
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:/config-repo
+    volumes:
+      - ./config-repo:/config-repo:ro
+    depends_on:
+      - mysql
+
+  eureka-server:
+    build: ./services/eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka}
+    depends_on:
+      - config-server
+
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka}
+    depends_on:
+      - eureka-server
+
+  user-service:
+    build: ./services/user-service
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+    depends_on:
+      - mysql
+      - eureka-server
+
+  event-service:
+    build: ./services/event-service
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+    depends_on:
+      - mysql
+      - eureka-server
+
+  reservation-service:
+    build: ./services/reservation-service
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+    depends_on:
+      - mysql
+      - eureka-server
+
+  payment-service:
+    build: ./services/payment-service
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka}
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+    depends_on:
+      - mysql
+      - eureka-server
+
+  notification-service:
+    build: ./services/notification-service
+    environment:
+      CONFIG_SERVER_URL: ${CONFIG_SERVER_URL:-http://config-server:8888}
+      EUREKA_URL: ${EUREKA_URL:-http://eureka-server:8761/eureka}
+    depends_on:
+      - eureka-server
+
+  frontend:
+    build: ./frontend/event-platform-ui
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  mysql_data:
