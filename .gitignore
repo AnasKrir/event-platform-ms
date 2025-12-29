@@ -44,5 +44,5 @@ build/
 # Env files (secrets)
 .env
 .env.*
-!.env.docker
+.env.docker
 .idea
