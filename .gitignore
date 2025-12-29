@@ -42,3 +42,5 @@ build/
 **/dist/
 **/*.log
 .env
+.env.docker
+.idea
